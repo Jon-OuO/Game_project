@@ -16,111 +16,178 @@ attackRight.src = 'game_screen/player/human_attack_right.png';
 const attackLeft = new Image();
 attackLeft.src = 'game_screen/player/human_attack_left.png';
 
-// 設置地塊數據
-const blockImages = [
+// 設置地塊圖片路徑
+const firstLayerBlockImages = [
   'game_screen/background/block/Tile (1).png',
   'game_screen/background/block/Tile (2).png',
   'game_screen/background/block/Tile (3).png'
 ];
-const blockWidth = 128; // 地塊的基準寬度
-const blockHeight = 128; // 地塊的基準高度
+const secondLayerBlockImages = [
+  'game_screen/background/block/Tile (4).png',
+  'game_screen/background/block/Tile (5).png',
+  'game_screen/background/block/Tile (6).png'
+];
+
+const thirdLayerBlockImages = [
+  'game_screen/background/block/Tile (12).png',
+  'game_screen/background/block/Tile (9).png',
+  'game_screen/background/block/Tile (13).png'
+];
+const blockWidth = 128; // 地塊基準寬度
+const blockHeight = 128; // 地塊基準高度
 
 // 設置角色屬性
 const player = {
-  x: 100,  // 角色初始位置
+  x: 100,
   y: canvas.height - 150,
-  width: 100,  // 基準角色寬度
-  height: 100,  // 基準角色高度
-  speed: 3,  // 移動速度
+  width: 50, // 基準角色寬度
+  height: 50, // 基準角色高度
+  speed: 2, // 移動速度
   dx: 0,  // 水平方向速度
   dy: 0,  // 垂直方向速度
   gravity: 0.8,  // 垂直重力加速度
   isJumping: false,  // 跳躍狀態
   onGround: false,  // 是否在地面
-  direction: 'right',  // 朝向
+  direction: 'right',  // 初始角色朝向
   frameIndex: 0,  // 精靈動畫幀索引
   frameCounter: 0,  // 精靈動畫計數器
   totalFrames: 9,  // 行走動畫幀數
   attackFrames: 6,  // 攻擊動畫幀數
-  animationSpeed: 7,  // 動畫速度
+  animationSpeed: 12,  // 動畫速度(數字越高越慢)
   standing: true,  // 是否站立
   isAttacking: false,  // 是否在攻擊
   frameWidth: 64  // 單幀寬度
 };
 
-// 設定背景偏移量（控制背景的水平滾動）
+// 設置背景偏移量
 let bgOffsetX = 0;
-const bgWidth = 2000; // 基準背景寬度（單一背景的寬度，用於循環）
+const bgWidth = 2000; // 基準背景寬度
 
-// 自動生成地塊
-const blocks = [];
+// 儲存第一層到第三層的地塊
+const firstLayerBlocks = [];
+const secondLayerBlocks = [];
+const thirdLayerBlocks = [];
+
+// 初始化第一層地塊
 for (let i = 0; i < 12; i++) {
-  const blockImageIndex = i === 0 ? 0 : i === 11 ? 2 : 1; // 第一和最後地塊使用不同圖片
+  const blockImageIndex = i === 0 ? 0 : i === 11 ? 2 : 1;
   const block = {
     image: new Image(),
-    x: 100 + i * blockWidth, // X位置依序排列
-    y: canvas.height - 150,  // Y位置設定在視窗底部
+    x: 100 + i * blockWidth,
+    y: canvas.height - 150,
     width: blockWidth,
     height: blockHeight
   };
-  block.image.src = blockImages[blockImageIndex];
-  blocks.push(block);
+  block.image.src = firstLayerBlockImages[blockImageIndex];
+  firstLayerBlocks.push(block);
 }
 
-// 設置畫布為全視窗大小
+// 初始化第二層地塊
+for (let i = 0; i < 12; i++) {
+  const blockImageIndex = i === 0 ? 0 : i === 11 ? 2 : 1;
+  const block = {
+    image: new Image(),
+    x: 100 + i * blockWidth, // 第二層偏移
+    y: canvas.height - 150 - blockHeight,
+    width: blockWidth,
+    height: blockHeight
+  };
+  block.image.src = secondLayerBlockImages[blockImageIndex];
+  secondLayerBlocks.push(block);
+}
+// 初始化第三層地塊
+for (let i = 0; i < 12; i++) {
+  const blockImageIndex = i === 0 ? 0 : i === 11 ? 2 : 1;
+  const block = {
+    image: new Image(),
+    x: 100 + i * blockWidth, // 第三層偏移
+    y: canvas.height - 150, // 先使用基準值，稍後在resizeCanvas內更新
+    width: blockWidth,
+    height: blockHeight
+  };
+  block.image.src = thirdLayerBlockImages[blockImageIndex];
+  thirdLayerBlocks.push(block);
+}
+
+// 設置畫布大小並調整地塊尺寸和位置
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  // 計算縮放比例
-  const scaleFactor = canvas.height / 800; // 基準高度為 800
+  const scaleFactor = canvas.height / 800; // 基準高度為800
 
-  // 更新角色的尺寸
   player.width = 100 * scaleFactor;
   player.height = 100 * scaleFactor;
 
-  // 更新地塊尺寸和位置
-  blocks.forEach((block, i) => {
+  // 更新第一層地塊
+  firstLayerBlocks.forEach((block, i) => {
     block.width = blockWidth * scaleFactor;
     block.height = blockHeight * scaleFactor;
     block.x = 0 * scaleFactor + i * block.width;
     block.y = canvas.height - block.height - 150 * scaleFactor;
   });
 
-  // 更新角色位置，確保在地塊之上
-  player.y = blocks[0].y - player.height;
+   // 更新第二層地塊
+   secondLayerBlocks.forEach((block, i) => {
+    block.width = blockWidth * scaleFactor;
+    block.height = blockHeight * scaleFactor;
+    block.x = 0 * scaleFactor + i * block.width;
+    block.y = canvas.height - block.height - 22 * scaleFactor; // 土塊數據設置
+  });
+
+  // 更新第三層地塊
+  thirdLayerBlocks.forEach((block, i) => {
+    block.width = blockWidth * scaleFactor;
+    block.height = blockHeight * scaleFactor;
+    block.x = 0 * scaleFactor + i * block.width;
+    block.y = canvas.height - block.height - (-106) * scaleFactor; // 土塊數據設置
+  });
+
+  player.y = firstLayerBlocks[0].y - player.height; // 角色置於地塊上
 }
 resizeCanvas(); // 初始執行畫布大小設置
 window.addEventListener('resize', resizeCanvas); // 視窗大小變動時重新調整
 
-// 繪製背景，應用縮放比例
+// 繪製背景
 function drawBackground() {
   const scaleFactor = canvas.height / bgImage.height; // 計算縮放比例
   const scaledBgWidth = bgImage.width * scaleFactor;  // 計算縮放後的背景寬度
 
-  // 繪製兩張背景圖片並重複
+  // 繪製背景重複滾動
   ctx.drawImage(bgImage, bgOffsetX, 0, scaledBgWidth, canvas.height);
   ctx.drawImage(bgImage, bgOffsetX + scaledBgWidth, 0, scaledBgWidth, canvas.height);
 
-  if (bgOffsetX <= -scaledBgWidth) {  // 重設背景偏移量以重複滾動
+  if (bgOffsetX <= -scaledBgWidth) { // 重設背景偏移量以重複滾動
     bgOffsetX = 0;
   }
 }
 
-// 繪製地塊
+// 更新畫面上的所有地塊繪製函數
 function drawBlocks() {
-  blocks.forEach(block => {
+  // 繪製第一層地塊
+  firstLayerBlocks.forEach(block => {
+    ctx.drawImage(block.image, block.x, block.y, block.width, block.height);
+  });
+
+  // 繪製第二層地塊
+  secondLayerBlocks.forEach(block => {
+    ctx.drawImage(block.image, block.x, block.y, block.width, block.height);
+  });
+
+  // 繪製第三層地塊
+  thirdLayerBlocks.forEach(block => {
     ctx.drawImage(block.image, block.x, block.y, block.width, block.height);
   });
 }
 
-// 繪製角色並應用縮放
+// 繪製角色
 function drawPlayer() {
   const sprite = player.isAttacking ? 
                 (player.direction === 'right' ? attackRight : attackLeft) : 
                 (player.direction === 'right' ? spriteRightWalk : spriteLeftWalk);
-  
-  const spriteX = player.frameIndex * player.frameWidth; // 精靈圖在X方向的位置
+  const spriteX = player.isJumping ? 
+                  player.frameWidth : 
+                  player.frameIndex * player.frameWidth; // 精靈圖在X方向的位置
 
   ctx.drawImage(
     sprite,
@@ -133,12 +200,12 @@ function drawPlayer() {
 function animatePlayer() {
   player.frameCounter++;
 
-  if (player.isAttacking) {  // 角色攻擊狀態
+  if (player.isAttacking) { // 角色攻擊狀態
     if (player.frameCounter >= player.animationSpeed) {
       player.frameCounter = 0;
       player.frameIndex++;
       if (player.frameIndex >= player.attackFrames) {
-        player.isAttacking = false;  // 結束攻擊
+        player.isAttacking = false; // 結束攻擊
         player.frameIndex = 0;
       }
     }
@@ -152,9 +219,9 @@ function animatePlayer() {
   }
 }
 
-// 更新角色的移動與重力
-function movePlayer() {
-  player.dy += player.gravity; // 應用重力
+// 更新角色移動
+function movePlayer() { // 垂直重力處理
+  player.dy += player.gravity; 
   player.y += player.dy;
 
   // 確保角色不超過地面
@@ -166,8 +233,8 @@ function movePlayer() {
   }
 
   // 檢測角色與地塊碰撞
-  blocks.forEach(block => {
-    const collisionPadding = 10; // X軸碰撞邊界填充
+  firstLayerBlocks.forEach(block => {
+    const collisionPadding = 10;
     const playerBottom = player.y + player.height;
     const blockTop = block.y;
 
@@ -175,50 +242,48 @@ function movePlayer() {
       player.x + player.width - collisionPadding > block.x &&
       player.x + collisionPadding < block.x + block.width &&
       playerBottom > blockTop &&
-      playerBottom - player.dy <= blockTop &&
-      player.x + player.width > block.x + collisionPadding &&
-      player.x < block.x + block.width - collisionPadding
+      playerBottom - player.dy <= blockTop
     ) {
-      player.y = blockTop - player.height; // 將角色放置於地塊上
+      player.y = blockTop - player.height;
       player.dy = 0;
       player.isJumping = false;
       player.onGround = true;
     }
   });
 
-  // 控制角色移動與背景偏移
-  if (player.dx !== 0 && !player.isAttacking) { // 攻擊時不移動
-    const maxPlayerX = canvas.width * 0.5; // 控制角色於畫布中間
+  if (player.dx !== 0 && !player.isAttacking) {
+    const maxPlayerX = canvas.width * 0.5;
     if (player.x < maxPlayerX || (player.x > maxPlayerX && bgOffsetX <= -bgWidth)) {
       player.x += player.dx;
     } else {
       bgOffsetX -= player.dx;
-      blocks.forEach(block => block.x -= player.dx);
+      firstLayerBlocks.forEach(block => block.x -= player.dx);
+      secondLayerBlocks.forEach(block => block.x -= player.dx);
+      thirdLayerBlocks.forEach(block => block.x -= player.dx);
     }
   }
 }
 
-// 處理鍵盤按鍵
+// 處理鍵盤事件
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowRight' && !player.isAttacking) { // 右移
+  if (e.key === 'ArrowRight' && !player.isAttacking) {
     player.dx = player.speed;
     player.direction = 'right';
     player.standing = false;
-  } else if (e.key === 'ArrowLeft' && !player.isAttacking) { // 左移
+  } else if (e.key === 'ArrowLeft' && !player.isAttacking) {
     player.dx = -player.speed;
     player.direction = 'left';
     player.standing = false;
-  } else if (e.key === ' ' && player.onGround) { // 跳躍
+  } else if (e.key === ' ' && player.onGround) {
     player.dy = -15;
     player.isJumping = true;
     player.onGround = false;
-  } else if (e.key === 'z' || e.key === 'Z') { // 攻擊
+  } else if (e.key === 'z' || e.key === 'Z') {
     player.isAttacking = true;
     player.frameIndex = 0;
   }
 });
 
-// 停止角色左右移動
 document.addEventListener('keyup', (e) => {
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     player.dx = 0;
@@ -226,14 +291,30 @@ document.addEventListener('keyup', (e) => {
   }
 });
 
-// 遊戲更新和繪製循環
-function gameLoop() {
+// 更新遊戲畫面
+function update() {
+  movePlayer();
+  animatePlayer();
+}
+
+// 渲染遊戲畫面
+function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
   drawBlocks();
+  drawPlayer();
+}
+
+// 遊戲主循環
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBackground();
+  drawBlocks(); // 繪製所有地塊
   movePlayer();
   animatePlayer();
   drawPlayer();
   requestAnimationFrame(gameLoop); // 持續遊戲循環
 }
-gameLoop(); // 啟動遊戲
+
+// 啟動遊戲主循環
+gameLoop();
