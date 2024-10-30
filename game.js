@@ -185,9 +185,13 @@ function drawPlayer() {
   const sprite = player.isAttacking ? 
                 (player.direction === 'right' ? attackRight : attackLeft) : 
                 (player.direction === 'right' ? spriteRightWalk : spriteLeftWalk);
-  const spriteX = player.isJumping ? 
-                  player.frameWidth : 
-                  player.frameIndex * player.frameWidth; // 精靈圖在X方向的位置
+  let spriteX;
+      if (player.isJumping) {
+          // 這裡可設定跳躍時的精靈圖
+          spriteX = 0; // 假設跳躍時使用第一幀
+          } else {
+                    spriteX = player.frameIndex * player.frameWidth; // 精靈圖在X方向的位置
+                }
 
   ctx.drawImage(
     sprite,
@@ -253,10 +257,24 @@ function movePlayer() { // 垂直重力處理
 
   if (player.dx !== 0 && !player.isAttacking) {
     const maxPlayerX = canvas.width * 0.5;
+
+    // 移動角色
     if (player.x < maxPlayerX || (player.x > maxPlayerX && bgOffsetX <= -bgWidth)) {
       player.x += player.dx;
+
+      // 限制角色不離開畫面左側邊界
+      if (player.x < 0) {
+        player.x = 0;
+      }
+
+      // 限制角色不離開畫面右側邊界
+      if (player.x + player.width > canvas.width) {
+        player.x = canvas.width - player.width;
+      }
     } else {
+      // 更新背景偏移量，並限制其最小值為0，避免背景錯位
       bgOffsetX -= player.dx;
+      bgOffsetX = Math.min(0, bgOffsetX); // 當 bgOffsetX 超過0時，限制其不再減小
       firstLayerBlocks.forEach(block => block.x -= player.dx);
       secondLayerBlocks.forEach(block => block.x -= player.dx);
       thirdLayerBlocks.forEach(block => block.x -= player.dx);
