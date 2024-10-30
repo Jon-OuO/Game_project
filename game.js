@@ -15,17 +15,23 @@ const bgImage = new Image();
 bgImage.src = 'test_game_screen/background_0.png'; // 將此處設為您的背景圖片路徑
 
 const spriteRightWalk = new Image();
-spriteRightWalk.src = 'test_game_screen/BODY_male-1.png';
+spriteRightWalk.src = 'test_game_screen/human_walk_right.png';
 
 const spriteLeftWalk = new Image();
-spriteLeftWalk.src = 'test_game_screen/BODY_male-2.png';
+spriteLeftWalk.src = 'test_game_screen/human_walk_left.png';
+
+const attackRight = new Image();
+attackRight.src = 'test_game_screen/human_attack_right.png';
+
+const attackLeft = new Image();
+attackLeft.src = 'test_game_screen/human_attack_left.png';
 
 // 設定角色屬性
 const player = {
   x: 100,
   y: canvas.height - 150,
   width: 128,
-  height: 128, // 統一為80px高度，避免不同高度導致的不一致
+  height: 128, // 統一為128px高度，避免不同高度導致的不一致
   speed: 3,
   dx: 0,
   dy: 0,
@@ -36,8 +42,10 @@ const player = {
   frameIndex: 0,
   frameCounter: 0,
   totalFrames: 9,
+  attackFrames: 6, // 攻擊動畫幀數
   animationSpeed: 10,
   standing: true,
+  isAttacking: false, // 是否正在攻擊
   frameWidth: 64, // 單個框架的寬度
 };
 
@@ -48,21 +56,42 @@ function drawBackground() {
 
 // 繪製角色
 function drawPlayer() {
-  // 根據方向選擇站立或行走精靈圖
-  const sprite = player.direction === 'right' ? spriteRightWalk : spriteLeftWalk;
-  const spriteX = player.standing ? 0 : player.frameIndex * player.frameWidth; // 站立時為第一幀
-
-  ctx.drawImage(
-    sprite,
-    spriteX, 0, player.frameWidth, sprite.height, // 原始精靈圖高度
-    player.x, player.y, player.width, player.height // 統一為顯示高度80px
-  );
+  if (player.isAttacking) {
+    // 根據方向選擇攻擊精靈圖
+    const sprite = player.direction === 'right' ? attackRight : attackLeft;
+    const spriteX = player.frameIndex * 64; // 攻擊動畫幀寬度64px
+    ctx.drawImage(
+      sprite,
+      spriteX, 0, 64, 64, // 原始精靈圖切割寬度和高度
+      player.x, player.y, player.width, player.height // 繪製到畫布上的大小
+    );
+  } else {
+    // 根據方向選擇站立或行走精靈圖
+    const sprite = player.direction === 'right' ? spriteRightWalk : spriteLeftWalk;
+    const spriteX = player.standing ? 0 : player.frameIndex * player.frameWidth; // 站立時為第一幀
+    ctx.drawImage(
+      sprite,
+      spriteX, 0, player.frameWidth, sprite.height, // 原始精靈圖高度
+      player.x, player.y, player.width, player.height // 統一為顯示高度128px
+    );
+  }
 }
 
 // 更新動畫框架
 function animatePlayer() {
-  if (!player.standing) {
-    player.frameCounter++;
+  player.frameCounter++;
+  if (player.isAttacking) {
+    // 攻擊動畫
+    if (player.frameCounter >= player.animationSpeed) {
+      player.frameCounter = 0;
+      player.frameIndex++;
+      if (player.frameIndex >= player.attackFrames) {
+        player.isAttacking = false;
+        player.frameIndex = 0; // 結束後回到初始幀
+      }
+    }
+  } else if (!player.standing) {
+    // 行走動畫
     if (player.frameCounter >= player.animationSpeed) {
       player.frameCounter = 0;
       player.frameIndex = (player.frameIndex + 1) % player.totalFrames;
@@ -104,6 +133,12 @@ document.addEventListener('keydown', (e) => {
     player.dy = -15;
     player.isJumping = true;
     player.onGround = false;
+  } else if (e.key === 'z' || e.key === 'Z') {
+    // 檢查是否已經在攻擊狀態，避免重複觸發
+    if (!player.isAttacking) {
+      player.isAttacking = true;
+      player.frameIndex = 0; // 攻擊動畫從頭開始
+    }
   }
 });
 
