@@ -36,10 +36,76 @@ const thirdLayerBlockImages = [
 const blockWidth = 128; // 地塊基準寬度
 const blockHeight = 128; // 地塊基準高度
 
+const obstacles = [
+  // 初始化障礙物物件陣列
+  {
+    image: new Image(),
+    x: 500,
+    y: canvas.height - (-330),
+    width: 60,
+    height: 60
+  },
+  {
+    image: new Image(),
+    x: 1000,
+    y: canvas.height - (-330),
+    width: 60,
+    height: 60
+  }
+];
+obstacles[0].image.src = 'game_screen/background/obstacle/TombStone (1).png';
+obstacles[1].image.src = 'game_screen/background/obstacle/TombStone (2).png';
+
+// 繪製障礙物
+function drawObstacles() {
+  obstacles.forEach(obstacle => {
+    ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+  });
+}
+
+
+function checkObstacleCollision() {
+  obstacles.forEach(obstacle => {
+    const playerBottom = player.y + player.height;
+    const obstacleTop = obstacle.y;
+    const playerRight = player.x + player.width;
+    const obstacleRight = obstacle.x + obstacle.width;
+
+    // 檢查角色從上方落在障礙物頂部
+    if (
+      playerBottom > obstacleTop &&                    // 角色底部在障礙物頂部之下
+      player.dy >= 0 &&                                // 角色正在下降
+      playerBottom - player.dy <= obstacleTop &&       // 上一幀不在障礙物內
+      playerRight > obstacle.x &&                      // 水平方向有重疊
+      player.x < obstacleRight
+    ) {
+      player.y = obstacleTop - player.height;          // 調整角色位置到障礙物頂部
+      player.dy = 0;                                   // 停止垂直移動
+      player.onGround = true;                          // 設定角色在地面
+      player.isJumping = false;                        // 停止跳躍狀態
+    }
+
+    // 檢查左右方向的碰撞，避免角色穿過障礙物
+    if (
+      playerBottom > obstacleTop + 10 &&               // 角色底部已超過障礙物的頂部
+      player.y < obstacleTop + obstacle.height &&      // 角色在障礙物高度範圍內
+      playerRight > obstacle.x &&                      // 水平方向重疊
+      player.x < obstacleRight
+    ) {
+      // 僅在角色的水平移動速度不為零時才處理碰撞
+      if (player.dx > 0) {
+        player.x = obstacle.x - player.width;          // 阻止角色向右穿過障礙物
+      } else if (player.dx < 0) {
+        player.x = obstacleRight;                      // 阻止角色向左穿過障礙物
+      }
+    }
+  });
+}
+
 // 設置角色屬性
 const player = {
   x: 100,
-  y: canvas.height - 150,
+  y: canvas.height - 140,
   width: 50, // 基準角色寬度
   height: 50, // 基準角色高度
   speed: 2, // 移動速度
@@ -69,8 +135,8 @@ const secondLayerBlocks = [];
 const thirdLayerBlocks = [];
 
 // 初始化第一層地塊
-for (let i = 0; i < 12; i++) {
-  const blockImageIndex = i === 0 ? 0 : i === 11 ? 2 : 1;
+for (let i = 0; i < 15; i++) {
+  const blockImageIndex = i === 0 ? 0 : i === 14 ? 2 : 1;
   const block = {
     image: new Image(),
     x: 100 + i * blockWidth,
@@ -83,8 +149,8 @@ for (let i = 0; i < 12; i++) {
 }
 
 // 初始化第二層地塊
-for (let i = 0; i < 12; i++) {
-  const blockImageIndex = i === 0 ? 0 : i === 11 ? 2 : 1;
+for (let i = 0; i < 15; i++) {
+  const blockImageIndex = i === 0 ? 0 : i === 14 ? 2 : 1;
   const block = {
     image: new Image(),
     x: 100 + i * blockWidth, // 第二層偏移
@@ -96,8 +162,8 @@ for (let i = 0; i < 12; i++) {
   secondLayerBlocks.push(block);
 }
 // 初始化第三層地塊
-for (let i = 0; i < 12; i++) {
-  const blockImageIndex = i === 0 ? 0 : i === 11 ? 2 : 1;
+for (let i = 0; i < 15; i++) {
+  const blockImageIndex = i === 0 ? 0 : i === 14 ? 2 : 1;
   const block = {
     image: new Image(),
     x: 100 + i * blockWidth, // 第三層偏移
@@ -180,6 +246,7 @@ function drawBlocks() {
   });
 }
 
+
 // 繪製角色
 function drawPlayer() {
   const sprite = player.isAttacking ? 
@@ -225,7 +292,9 @@ function animatePlayer() {
 
 // 更新角色移動
 function movePlayer() { // 垂直重力處理
-  player.dy += player.gravity; 
+  if (!player.onGround) {
+    player.dy += player.gravity; 
+  }
   player.y += player.dy;
 
   // 確保角色不超過地面
@@ -312,6 +381,7 @@ document.addEventListener('keyup', (e) => {
 // 更新遊戲畫面
 function update() {
   movePlayer();
+  checkObstacleCollision();
   animatePlayer();
 }
 
@@ -320,6 +390,7 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
   drawBlocks();
+  drawObstacles();
   drawPlayer();
 }
 
@@ -328,7 +399,9 @@ function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBackground();
   drawBlocks(); // 繪製所有地塊
+  drawObstacles(); //繪製障礙物
   movePlayer();
+  checkObstacleCollision(); // ：檢測障礙物碰撞
   animatePlayer();
   drawPlayer();
   requestAnimationFrame(gameLoop); // 持續遊戲循環
